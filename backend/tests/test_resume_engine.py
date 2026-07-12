@@ -7,6 +7,12 @@ maria@email.com
 
 (555) 555-1234
 
+Appalachian State University
+
+Master of Science in Applied Data Analytics
+
+Expected Graduation: December 2026
+
 Python
 SQL
 Power BI
