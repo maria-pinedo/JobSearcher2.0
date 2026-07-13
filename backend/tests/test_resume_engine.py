@@ -7,7 +7,7 @@ class TestResumeEngineIntegration(unittest.TestCase):
         self.engine = ResumeEngine()
 
     def test_complete_resume_pipeline(self):
-        # A full, multi-section mock resume designed to test all 5 extractors simultaneously
+        # A full, multisection mock resume designed to test all 5 extractors simultaneously
         sample_resume = """
         Maria Jose Pinedo Velarde
         maria@email.com
