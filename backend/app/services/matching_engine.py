@@ -1,12 +1,14 @@
 import re
 from sentence_transformers import SentenceTransformer, util
+from app.services.visa_classifier import VisaEligibilityClassifier
 
 
 class MatchingEngine:
     def __init__(self):
-        # Load a lightweight, fast, and highly effective pre-trained NLP model
-        # Note: It will download automatically the very first time this runs.
+        # Load the pre-trained NLP model
         self.nlp_model = SentenceTransformer('all-MiniLM-L6-v2')
+        # Initialize the gatekeeper
+        self.visa_classifier = VisaEligibilityClassifier()
 
     def calculate_keyword_match(self, candidate_skills, job_description):
         """
@@ -52,7 +54,7 @@ class MatchingEngine:
     def evaluate_match(self, candidate_profile, job_posting):
         """
         Main pipeline to evaluate a job against a candidate.
-        Returns a blended score using both strict keywords and NLP semantics.
+        Returns a blended score using strict keywords, NLP semantics, and Visa eligibility.
         """
         candidate_skills = candidate_profile.get("skills", [])
         job_desc = job_posting.get("description", "")
@@ -63,6 +65,9 @@ class MatchingEngine:
         # Blended Score: 40% Keyword Accuracy, 60% Semantic Understanding
         blended_score = round((keyword_score * 0.4) + (semantic_score * 0.6), 2)
 
+        # Run the Visa Compatibility Filter
+        visa_evaluation = self.visa_classifier.evaluate(job_desc)
+
         return {
             "job_id": job_posting.get("job_id"),
             "job_title": job_posting.get("title"),
@@ -70,5 +75,7 @@ class MatchingEngine:
             "keyword_score": keyword_score,
             "semantic_score": semantic_score,
             "match_score": blended_score,
-            "scoring_method": "blended_nlp"
+            "scoring_method": "blended_nlp",
+            "visa_score": visa_evaluation["visa_score"],
+            "visa_reason": visa_evaluation["reason"]
         }

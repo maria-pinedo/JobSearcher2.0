@@ -29,12 +29,14 @@ class TestMatchingEngine(unittest.TestCase):
         self.assertEqual(result["keyword_score"], 0.0)  # Proving exact words failed
         self.assertTrue(result["semantic_score"] > 30.0)  # Proving AI understood the context
         self.assertEqual(result["scoring_method"], "blended_nlp")
+        self.assertIn("visa_score", result)
+        self.assertIn("visa_reason", result)
 
         print(f"\n--- AI MATCH RESULTS ---")
         print(f"Keyword Score: {result['keyword_score']}%")
         print(f"Semantic Score: {result['semantic_score']}%")
-        print(f"Final Blended Score: {result['match_score']}%\n")
-
+        print(f"Final Blended Score: {result['match_score']}%")
+        print(f"Visa Compatibility: {result['visa_reason']}\n")
 
 if __name__ == "__main__":
     unittest.main()
