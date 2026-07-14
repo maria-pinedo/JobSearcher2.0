@@ -1,10 +1,12 @@
 import re
+from sentence_transformers import SentenceTransformer, util
 
 
 class MatchingEngine:
     def __init__(self):
-        # We leave a placeholder here for the future NLP model
-        self.nlp_model = None
+        # Load a lightweight, fast, and highly effective pre-trained NLP model
+        # Note: It will download automatically the very first time this runs.
+        self.nlp_model = SentenceTransformer('all-MiniLM-L6-v2')
 
     def calculate_keyword_match(self, candidate_skills, job_description):
         """
@@ -14,35 +16,59 @@ class MatchingEngine:
         if not candidate_skills or not job_description:
             return 0.0
 
-        # Normalize skills to lowercase for case-insensitive matching
         skills_clean = set(skill.lower() for skill in candidate_skills)
         job_desc_lower = job_description.lower()
 
-        matched_skills = []
-        for skill in skills_clean:
-            # Check if the exact skill phrase exists in the job description
-            if skill in job_desc_lower:
-                matched_skills.append(skill)
+        matched_skills = [skill for skill in skills_clean if skill in job_desc_lower]
 
-        # Calculate percentage: (Matched Skills / Total Candidate Skills) * 100
+        if not skills_clean:
+            return 0.0
+
         score = (len(matched_skills) / len(skills_clean)) * 100
+        return round(score, 2)
 
+    def calculate_semantic_match(self, candidate_skills, job_description):
+        """
+        Uses NLP embeddings to calculate the contextual similarity (Cosine Similarity)
+        between the candidate's skill profile and the job description.
+        """
+        if not candidate_skills or not job_description:
+            return 0.0
+
+        # Convert the list of skills into a single contextual phrase
+        candidate_text = "Candidate expertise: " + ", ".join(candidate_skills)
+
+        # Generate high-dimensional vectors (embeddings)
+        candidate_embedding = self.nlp_model.encode(candidate_text)
+        job_embedding = self.nlp_model.encode(job_description)
+
+        # Calculate Cosine Similarity
+        similarity = util.cos_sim(candidate_embedding, job_embedding).item()
+
+        # Convert to percentage and cap at 100
+        score = max(0.0, min(similarity * 100, 100.0))
         return round(score, 2)
 
     def evaluate_match(self, candidate_profile, job_posting):
         """
         Main pipeline to evaluate a job against a candidate.
-        Returns a detailed dictionary of the match results.
+        Returns a blended score using both strict keywords and NLP semantics.
         """
         candidate_skills = candidate_profile.get("skills", [])
         job_desc = job_posting.get("description", "")
 
         keyword_score = self.calculate_keyword_match(candidate_skills, job_desc)
+        semantic_score = self.calculate_semantic_match(candidate_skills, job_desc)
+
+        # Blended Score: 40% Keyword Accuracy, 60% Semantic Understanding
+        blended_score = round((keyword_score * 0.4) + (semantic_score * 0.6), 2)
 
         return {
             "job_id": job_posting.get("job_id"),
             "job_title": job_posting.get("title"),
             "company": job_posting.get("company"),
-            "match_score": keyword_score,
-            "scoring_method": "keyword_baseline"
+            "keyword_score": keyword_score,
+            "semantic_score": semantic_score,
+            "match_score": blended_score,
+            "scoring_method": "blended_nlp"
         }
